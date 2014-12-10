@@ -1,7 +1,6 @@
 package yaml
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -37,6 +36,14 @@ type NestedString struct {
 	A string
 }
 
+type UnmarshalSlice struct {
+	A []NestedSlice
+}
+
+type NestedSlice struct {
+	B string
+}
+
 func TestUnmarshal(t *testing.T) {
 	y := []byte("a: 1")
 	s1 := UnmarshalString{}
@@ -47,6 +54,11 @@ func TestUnmarshal(t *testing.T) {
 	s2 := UnmarshalNestedString{}
 	e2 := UnmarshalNestedString{NestedString{"1"}}
 	unmarshal(t, y, &s2, &e2)
+
+	y = []byte("a:\n  - b: abc\n  - b: 123")
+	s3 := UnmarshalSlice{}
+	e3 := UnmarshalSlice{[]NestedSlice{NestedSlice{"abc"}, NestedSlice{"123"}}}
+	unmarshal(t, y, &s3, &e3)
 }
 
 func unmarshal(t *testing.T, y []byte, s, e interface{}) {
@@ -190,7 +202,7 @@ func runCases(t *testing.T, runType RunType, cases []Case) {
 
 	for _, c := range cases {
 		// Convert the string.
-		fmt.Printf("converting %s\n", c.input)
+		t.Logf("converting %s\n", c.input)
 		output, err := f([]byte(c.input))
 		if err != nil {
 			t.Errorf("Failed to convert %s, input: `%s`, err: %v", msg, c.input, err)

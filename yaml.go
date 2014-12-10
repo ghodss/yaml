@@ -196,10 +196,27 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 		return strMap, nil
 	case []interface{}:
 		// We need to recurse into arrays in case there are any
-		// map[interface{}]interface{}'s inside.
+		// map[interface{}]interface{}'s inside and to convert any
+		// numbers to strings.
+
+		// If jsonTarget is a slice (which it really should be), find the
+		// thing it's going to map to. If it's not a slice, just pass nil
+		// - JSON conversion will error for us if it's a real issue.
+		var jsonSliceElemValue *reflect.Value
+		if jsonTarget != nil {
+			t := *jsonTarget
+			if t.Kind() == reflect.Slice {
+				// By default slices point to nil, so we have to create a zero
+				// val of the slice type to use it as reflect.Value.
+				ev := reflect.Zero(t.Type().Elem())
+				jsonSliceElemValue = &ev
+			}
+		}
+
+		// Make and use a new array.
 		arr := make([]interface{}, len(typedYAMLObj))
 		for i, v := range typedYAMLObj {
-			arr[i], err = convertToJSONableObject(v, nil)
+			arr[i], err = convertToJSONableObject(v, jsonSliceElemValue)
 			if err != nil {
 				return nil, err
 			}
