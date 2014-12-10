@@ -42,6 +42,7 @@ type UnmarshalSlice struct {
 
 type NestedSlice struct {
 	B string
+	C *string
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -55,9 +56,9 @@ func TestUnmarshal(t *testing.T) {
 	e2 := UnmarshalNestedString{NestedString{"1"}}
 	unmarshal(t, y, &s2, &e2)
 
-	y = []byte("a:\n  - b: abc\n  - b: 123")
+	y = []byte("a:\n  - b: abc\n    c: def\n  - b: 123\n    c: 456\n")
 	s3 := UnmarshalSlice{}
-	e3 := UnmarshalSlice{[]NestedSlice{NestedSlice{"abc"}, NestedSlice{"123"}}}
+	e3 := UnmarshalSlice{[]NestedSlice{NestedSlice{"abc", strPtr("def")}, NestedSlice{"123", strPtr("456")}}}
 	unmarshal(t, y, &s3, &e3)
 }
 

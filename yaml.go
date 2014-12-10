@@ -206,9 +206,9 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 		if jsonTarget != nil {
 			t := *jsonTarget
 			if t.Kind() == reflect.Slice {
-				// By default slices point to nil, so we have to create a zero
-				// val of the slice type to use it as reflect.Value.
-				ev := reflect.Zero(t.Type().Elem())
+				// By default slices point to nil, but we need a reflect.Value
+				// pointing to a value of the slice type, so we create one here.
+				ev := reflect.Indirect(reflect.New(t.Type().Elem()))
 				jsonSliceElemValue = &ev
 			}
 		}
