@@ -13,12 +13,22 @@ import (
 // Marshals the object into JSON then converts JSON to YAML and returns the
 // YAML.
 func Marshal(o interface{}) ([]byte, error) {
+	return marshal(o, false)
+}
+
+// Marshals the object into JSON then converts JSON to YAML and returns the
+// YAML without converting numbers to float64 in the process.
+func MarshalUseNumber(o interface{}) ([]byte, error) {
+	return marshal(o, true)
+}
+
+func marshal(o interface{}, useNumber bool) ([]byte, error) {
 	j, err := json.Marshal(o)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling into JSON: ", err)
 	}
 
-	y, err := JSONToYAML(j)
+	y, err := jsonToYaml(j, useNumber)
 	if err != nil {
 		return nil, fmt.Errorf("error converting JSON to YAML: ", err)
 	}
@@ -33,24 +43,31 @@ func Unmarshal(y []byte, o interface{}) error {
 	if err != nil {
 		return fmt.Errorf("error converting YAML to JSON: %v", err)
 	}
-
+	fmt.Printf("vishh: yamltojson: %q\n", string(j))
 	err = json.Unmarshal(j, o)
 	if err != nil {
 		return fmt.Errorf("error unmarshaling JSON: %v", err)
 	}
-
+	fmt.Printf("vishh: json unmarshal: %+v\n", o)
 	return nil
 }
 
 // Convert JSON to YAML.
 func JSONToYAML(j []byte) ([]byte, error) {
+	return jsonToYaml(j, false)
+}
+
+func jsonToYaml(j []byte, useNumber bool) ([]byte, error) {
 	// Convert the JSON to an object.
+	d := json.NewDecoder(bytes.NewReader(j))
+	if useNumber {
+		d.UseNumber()
+	}
 	var jsonObj interface{}
-	err := json.Unmarshal(j, &jsonObj)
+	err := d.Decode(&jsonObj)
 	if err != nil {
 		return nil, err
 	}
-
 	// Marshal this object into YAML.
 	return yaml.Marshal(jsonObj)
 }
