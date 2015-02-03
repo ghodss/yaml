@@ -5,15 +5,34 @@ import (
 	"testing"
 )
 
-type MarshalTest struct {
+type MarshalTestStr struct {
 	A string
 }
 
-func TestMarshal(t *testing.T) {
-	s := MarshalTest{"a"}
+func TestMarshalString(t *testing.T) {
+	s := MarshalTestStr{"a"}
 	e := []byte("A: a\n")
 
 	y, err := Marshal(s)
+	if err != nil {
+		t.Errorf("error marshaling YAML: %v", err)
+	}
+
+	if !reflect.DeepEqual(y, e) {
+		t.Errorf("marshal YAML was unsuccessful, expected: %#v, got: %#v",
+			string(e), string(y))
+	}
+}
+
+type MarshalTestNum struct {
+	A int64
+}
+
+func TestMarshalNumber(t *testing.T) {
+	s := MarshalTestNum{100000000000}
+	e := []byte("A: \"100000000000\"\n")
+
+	y, err := MarshalUseNumber(s)
 	if err != nil {
 		t.Errorf("error marshaling YAML: %v", err)
 	}
