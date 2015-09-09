@@ -37,6 +37,10 @@ type UnmarshalString struct {
 	True string
 }
 
+type UnmarshalStringMap struct {
+	A map[string]string
+}
+
 type UnmarshalNestedString struct {
 	A NestedString
 }
@@ -79,6 +83,11 @@ func TestUnmarshal(t *testing.T) {
 	s3 := UnmarshalSlice{}
 	e3 := UnmarshalSlice{[]NestedSlice{NestedSlice{"abc", strPtr("def")}, NestedSlice{"123", strPtr("456")}}}
 	unmarshal(t, y, &s3, &e3)
+
+	y = []byte("a:\n  b: 1")
+	s4 := UnmarshalStringMap{}
+	e4 := UnmarshalStringMap{map[string]string{"b": "1"}}
+	unmarshal(t, y, &s4, &e4)
 }
 
 func unmarshal(t *testing.T, y []byte, s, e interface{}) {
