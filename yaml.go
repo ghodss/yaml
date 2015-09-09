@@ -112,7 +112,6 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 			jsonTarget = &pv
 		}
 	}
-	fmt.Printf("jsonTarget: %v\n", jsonTarget)
 
 	// If yamlObj is a number or a boolean, check if jsonTarget is a string -
 	// if so, coerce.  Else return normal.
@@ -165,7 +164,6 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 				return nil, fmt.Errorf("Unsupported map key of type: %s, key: %+#v, value: %+#v",
 					reflect.TypeOf(k), k, v)
 			}
-			fmt.Printf("keyString: %s\n", keyString)
 
 			// jsonTarget should be a struct or a map. If it's a struct, find
 			// the field it's going to map to and pass its reflect.Value. If
@@ -246,7 +244,6 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 		}
 		return arr, nil
 	default:
-		fmt.Printf("typedYAMLObj: %v\n", typedYAMLObj)
 		// If the target type is a string and the YAML type is a number,
 		// convert the YAML type to a string.
 		if jsonTarget != nil && (*jsonTarget).Kind() == reflect.String {
