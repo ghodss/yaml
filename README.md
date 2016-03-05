@@ -52,7 +52,7 @@ import (
 
 type Person struct {
 	Name string `json:"name"`  // Affects YAML field names too.
-	Age int `json:"name"`
+	Age int `json:"age"`
 }
 
 func main() {
