@@ -10,6 +10,14 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type YAMLError struct {
+	err error
+}
+
+func (e *YAMLError) Error() string {
+	return e.err.Error()
+}
+
 // Marshals the object into JSON then converts JSON to YAML and returns the
 // YAML.
 func Marshal(o interface{}) ([]byte, error) {
@@ -20,7 +28,7 @@ func Marshal(o interface{}) ([]byte, error) {
 
 	y, err := JSONToYAML(j)
 	if err != nil {
-		return nil, fmt.Errorf("error converting JSON to YAML: %v", err)
+		return nil, &YAMLError{fmt.Errorf("error converting JSON to YAML: %v", err)}
 	}
 
 	return y, nil
@@ -31,12 +39,12 @@ func Unmarshal(y []byte, o interface{}) error {
 	vo := reflect.ValueOf(o)
 	j, err := yamlToJSON(y, &vo)
 	if err != nil {
-		return fmt.Errorf("error converting YAML to JSON: %v", err)
+		return &YAMLError{fmt.Errorf("error converting YAML to JSON: %v", err)}
 	}
 
 	err = json.Unmarshal(j, o)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling JSON: %v", err)
+		return &YAMLError{fmt.Errorf("error unmarshaling JSON: %v", err)}
 	}
 
 	return nil
@@ -53,11 +61,15 @@ func JSONToYAML(j []byte) ([]byte, error) {
 	// number type, so we can preserve number type throughout this process.
 	err := yaml.Unmarshal(j, &jsonObj)
 	if err != nil {
-		return nil, err
+		return nil, &YAMLError{err}
 	}
 
 	// Marshal this object into YAML.
-	return yaml.Marshal(jsonObj)
+	out, err := yaml.Marshal(jsonObj)
+	if err != nil {
+		return nil, &YAMLError{err}
+	}
+	return out, nil
 }
 
 // Convert YAML to JSON. Since JSON is a subset of YAML, passing JSON through
@@ -71,7 +83,11 @@ func JSONToYAML(j []byte) ([]byte, error) {
 //   not use the !!binary tag in your YAML. This will ensure the original base64
 //   encoded data makes it all the way through to the JSON.
 func YAMLToJSON(y []byte) ([]byte, error) {
-	return yamlToJSON(y, nil)
+	out, err := yamlToJSON(y, nil)
+	if err != nil {
+		return nil, &YAMLError{err}
+	}
+	return out, nil
 }
 
 func yamlToJSON(y []byte, jsonTarget *reflect.Value) ([]byte, error) {
