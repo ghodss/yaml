@@ -19,7 +19,7 @@ type MarshalTest struct {
 func TestMarshal(t *testing.T) {
 	f32String := strconv.FormatFloat(math.MaxFloat32, 'g', -1, 32)
 	s := MarshalTest{"a", math.MaxInt64, math.MaxFloat32}
-	e := []byte(fmt.Sprintf("A: a\nB: %d\nC: %s\n", math.MaxInt64, f32String))
+	e := []byte(fmt.Sprintf("A: a\nB: %d\nC: %s\n", int64(math.MaxInt64), f32String))
 
 	y, err := Marshal(s)
 	if err != nil {
