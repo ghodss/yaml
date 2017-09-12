@@ -125,7 +125,7 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 		//
 		// From my reading of go-yaml v2 (specifically the resolve function),
 		// keys can only have the types string, int, int64, float64, binary
-		// (unsupported), or null (unsupported).
+		// (unsupported).
 		strMap := make(map[string]interface{})
 		for k, v := range typedYAMLObj {
 			// Resolve the key to a string first.
@@ -160,6 +160,8 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 				} else {
 					keyString = "false"
 				}
+                        case nil:
+				keyString = "null"
 			default:
 				return nil, fmt.Errorf("Unsupported map key of type: %s, key: %+#v, value: %+#v",
 					reflect.TypeOf(k), k, v)
