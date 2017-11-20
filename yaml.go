@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
@@ -15,12 +16,12 @@ import (
 func Marshal(o interface{}) ([]byte, error) {
 	j, err := json.Marshal(o)
 	if err != nil {
-		return nil, fmt.Errorf("error marshaling into JSON: %v", err)
+		return nil, errors.Wrap(err, "failure marshaling into JSON")
 	}
 
 	y, err := JSONToYAML(j)
 	if err != nil {
-		return nil, fmt.Errorf("error converting JSON to YAML: %v", err)
+		return nil, errors.Wrap(err, "failure converting JSON to YAML")
 	}
 
 	return y, nil
@@ -31,12 +32,12 @@ func Unmarshal(y []byte, o interface{}) error {
 	vo := reflect.ValueOf(o)
 	j, err := yamlToJSON(y, &vo)
 	if err != nil {
-		return fmt.Errorf("error converting YAML to JSON: %v", err)
+		return errors.Wrap(err, "failure converting YAML to JSON")
 	}
 
 	err = json.Unmarshal(j, o)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling JSON: %v", err)
+		return errors.Wrap(err, "failure unmarshaling JSON")
 	}
 
 	return nil
