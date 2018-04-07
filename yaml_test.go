@@ -106,8 +106,8 @@ b:
 	unmarshal(t, y, &s5, &e5)
 }
 
-func unmarshal(t *testing.T, y []byte, s, e interface{}) {
-	err := Unmarshal(y, s)
+func unmarshal(t *testing.T, y []byte, s, e interface{}, opts ...JSONOpt) {
+	err := Unmarshal(y, s, opts...)
 	if err != nil {
 		t.Errorf("error unmarshaling YAML: %v", err)
 	}
