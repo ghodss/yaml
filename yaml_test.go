@@ -285,3 +285,16 @@ func runCases(t *testing.T, runType RunType, cases []Case) {
 func strPtr(s string) *string {
 	return &s
 }
+
+func TestYAMLToJSONStrict(t *testing.T) {
+	const data = `
+foo: bar
+foo: baz
+`
+	if _, err := YAMLToJSON([]byte(data)); err != nil {
+		t.Error("expected YAMLtoJSON to pass on duplicate field names")
+	}
+	if _, err := YAMLToJSONStrict([]byte(data)); err == nil {
+		t.Error("expected YAMLtoJSONStrict to fail on duplicate field names")
+	}
+}
