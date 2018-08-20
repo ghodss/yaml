@@ -298,3 +298,16 @@ foo: baz
 		t.Error("expected YAMLtoJSONStrict to fail on duplicate field names")
 	}
 }
+
+func TestUnmarshalStrict(t *testing.T) {
+	const data = `
+foo: bar
+foo: baz
+`
+	if err := Unmarshal([]byte(data), []byte{}); err != nil {
+		t.Error("expected Unmarshal to pass on duplicate field names")
+	}
+	if err := UnmarshalStrict([]byte(data), []byte{}); err == nil {
+		t.Error("expected UnmarshalStrict to fail on duplicate field names")
+	}
+}
