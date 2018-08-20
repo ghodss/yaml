@@ -118,6 +118,87 @@ func unmarshal(t *testing.T, y []byte, s, e interface{}, opts ...JSONOpt) {
 	}
 }
 
+func TestUnmarshalStrict(t *testing.T) {
+	y := []byte("a: 1")
+	s1 := UnmarshalString{}
+	e1 := UnmarshalString{A: "1"}
+	unmarshalStrict(t, y, &s1, &e1)
+
+	y = []byte("a: true")
+	s1 = UnmarshalString{}
+	e1 = UnmarshalString{A: "true"}
+	unmarshalStrict(t, y, &s1, &e1)
+
+	y = []byte("true: 1")
+	s1 = UnmarshalString{}
+	e1 = UnmarshalString{True: "1"}
+	unmarshalStrict(t, y, &s1, &e1)
+
+	y = []byte("a:\n  a: 1")
+	s2 := UnmarshalNestedString{}
+	e2 := UnmarshalNestedString{NestedString{"1"}}
+	unmarshalStrict(t, y, &s2, &e2)
+
+	y = []byte("a:\n  - b: abc\n    c: def\n  - b: 123\n    c: 456\n")
+	s3 := UnmarshalSlice{}
+	e3 := UnmarshalSlice{[]NestedSlice{NestedSlice{"abc", strPtr("def")}, NestedSlice{"123", strPtr("456")}}}
+	unmarshalStrict(t, y, &s3, &e3)
+
+	y = []byte("a:\n  b: 1")
+	s4 := UnmarshalStringMap{}
+	e4 := UnmarshalStringMap{map[string]string{"b": "1"}}
+	unmarshalStrict(t, y, &s4, &e4)
+
+	y = []byte(`
+a:
+  name: TestA
+b:
+  name: TestB
+`)
+	type NamedThing struct {
+		Name string `json:"name"`
+	}
+	s5 := map[string]*NamedThing{}
+	e5 := map[string]*NamedThing{
+		"a": &NamedThing{Name: "TestA"},
+		"b": &NamedThing{Name: "TestB"},
+	}
+	unmarshal(t, y, &s5, &e5)
+}
+
+func TestUnmarshalStrictFails(t *testing.T) {
+	y := []byte("a: true\na: false")
+	s1 := UnmarshalString{}
+	unmarshalStrictFail(t, y, &s1)
+
+	y = []byte("a:\n  - b: abc\n    c: 32\n      b: 123")
+	s2 := UnmarshalSlice{}
+	unmarshalStrictFail(t, y, &s2)
+
+	y = []byte("a:\n  b: 1\n    c: 3")
+	s3 := UnmarshalStringMap{}
+	unmarshalStrictFail(t, y, &s3)
+}
+
+func unmarshalStrict(t *testing.T, y []byte, s, e interface{}, opts ...JSONOpt) {
+	err := UnmarshalStrict(y, s, opts...)
+	if err != nil {
+		t.Errorf("error unmarshaling YAML: %v", err)
+	}
+
+	if !reflect.DeepEqual(s, e) {
+		t.Errorf("unmarshal YAML was unsuccessful, expected: %+#v, got: %+#v",
+			e, s)
+	}
+}
+
+func unmarshalStrictFail(t *testing.T, y []byte, s interface{}, opts ...JSONOpt) {
+	err := UnmarshalStrict(y, s, opts...)
+	if err == nil {
+		t.Errorf("error unmarshaling YAML: %v", err)
+	}
+}
+
 type Case struct {
 	input  string
 	output string
