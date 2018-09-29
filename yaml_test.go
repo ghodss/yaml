@@ -131,6 +131,7 @@ type RunType int
 const (
 	RunTypeJSONToYAML RunType = iota
 	RunTypeYAMLToJSON
+	RunTypeYAMLToJSONPretty
 )
 
 func TestJSONToYAML(t *testing.T) {
@@ -228,6 +229,30 @@ func TestYAMLToJSON(t *testing.T) {
 	runCases(t, RunTypeYAMLToJSON, cases)
 }
 
+func TestYAMLToJSONPretty(t *testing.T) {
+	cases := []Case{
+		{
+			"t: a\n",
+			"{\n  \"t\": \"a\"\n}",
+			nil,
+		}, {
+			"t: \n",
+			"{\n  \"t\": null\n}",
+			strPtr("t: null\n"),
+		}, {
+			"t: null\n",
+			"{\n  \"t\": null\n}",
+			nil,
+		}, {
+			"1: a\n",
+			"{\n  \"1\": \"a\"\n}",
+			strPtr("\"1\": a\n"),
+		},
+	}
+
+	runCases(t, RunTypeYAMLToJSONPretty, cases)
+}
+
 func runCases(t *testing.T, runType RunType, cases []Case) {
 	var f func([]byte) ([]byte, error)
 	var invF func([]byte) ([]byte, error)
@@ -238,10 +263,15 @@ func runCases(t *testing.T, runType RunType, cases []Case) {
 		invF = YAMLToJSON
 		msg = "JSON to YAML"
 		invMsg = "YAML back to JSON"
-	} else {
+	} else if runType == RunTypeYAMLToJSON {
 		f = YAMLToJSON
 		invF = JSONToYAML
 		msg = "YAML to JSON"
+		invMsg = "JSON back to YAML"
+	} else {
+		f = YAMLToJSONPretty
+		invF = JSONToYAML
+		msg = "YAML to JSON pretty"
 		invMsg = "JSON back to YAML"
 	}
 

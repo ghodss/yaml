@@ -34,7 +34,7 @@ type JSONOpt func(*json.Decoder) *json.Decoder
 // optionally configuring the behavior of the JSON unmarshal.
 func Unmarshal(y []byte, o interface{}, opts ...JSONOpt) error {
 	vo := reflect.ValueOf(o)
-	j, err := yamlToJSON(y, &vo)
+	j, err := yamlToJSON(y, &vo, "", "")
 	if err != nil {
 		return fmt.Errorf("error converting YAML to JSON: %v", err)
 	}
@@ -91,10 +91,14 @@ func JSONToYAML(j []byte) ([]byte, error) {
 //   not use the !!binary tag in your YAML. This will ensure the original base64
 //   encoded data makes it all the way through to the JSON.
 func YAMLToJSON(y []byte) ([]byte, error) {
-	return yamlToJSON(y, nil)
+	return yamlToJSON(y, nil, "", "")
 }
 
-func yamlToJSON(y []byte, jsonTarget *reflect.Value) ([]byte, error) {
+func YAMLToJSONPretty(y []byte) ([]byte, error) {
+	return yamlToJSON(y, nil, "", "  ")
+}
+
+func yamlToJSON(y []byte, jsonTarget *reflect.Value, prefix string, indent string) ([]byte, error) {
 	// Convert the YAML to an object.
 	var yamlObj interface{}
 	err := yaml.Unmarshal(y, &yamlObj)
@@ -112,7 +116,11 @@ func yamlToJSON(y []byte, jsonTarget *reflect.Value) ([]byte, error) {
 	}
 
 	// Convert this object to JSON and return the data.
-	return json.Marshal(jsonObj)
+	if prefix == "" && indent == "" {
+		return json.Marshal(jsonObj)
+	} else {
+		return json.MarshalIndent(jsonObj, prefix, indent)
+	}
 }
 
 func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (interface{}, error) {
