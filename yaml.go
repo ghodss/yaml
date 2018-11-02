@@ -39,7 +39,7 @@ func Unmarshal(y []byte, o interface{}, opts ...JSONOpt) error {
 // UnmarshalStrict strictly converts YAML to JSON then uses JSON to unmarshal
 // into an object, optionally configuring the behavior of the JSON unmarshal.
 func UnmarshalStrict(y []byte, o interface{}, opts ...JSONOpt) error {
-	return yamlUnmarshal(y, o, true, opts...)
+	return yamlUnmarshal(y, o, true, append(opts, DisallowUnknownFields)...)
 }
 
 // yamlUnmarshal unmarshals the given YAML byte stream into the given interface,
