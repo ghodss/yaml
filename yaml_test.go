@@ -211,6 +211,15 @@ a:
 `)
 	s4 := NamedThing{}
 	unmarshalStrictFail(t, y, &s4)
+
+	// Strict unmarshal should fail for unknown fields
+	y = []byte(`
+name: TestB
+id: ID-B
+unknown: Some-Value
+`)
+	s5 := NamedThing{}
+	unmarshalStrictFail(t, y, &s5)
 }
 
 func unmarshalStrict(t *testing.T, y []byte, s, e interface{}, opts ...JSONOpt) {
