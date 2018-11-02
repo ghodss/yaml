@@ -164,6 +164,24 @@ b:
 		"b": &NamedThing{Name: "TestB"},
 	}
 	unmarshal(t, y, &s5, &e5)
+
+	// When using not-so-strict unmarshal, we should
+	// be picking up the ID-1 as the value in the "id" field
+	y = []byte(`
+a:
+  name: TestA
+  id: ID-A
+  id: ID-1
+`)
+	type NamedThing2 struct {
+		Name string `json:"name"`
+		ID   string `json:"id"`
+	}
+	s6 := map[string]*NamedThing2{}
+	e6 := map[string]*NamedThing2{
+		"a": {Name: "TestA", ID: "ID-1"},
+	}
+	unmarshal(t, y, &s6, &e6)
 }
 
 func TestUnmarshalStrictFails(t *testing.T) {
@@ -178,6 +196,21 @@ func TestUnmarshalStrictFails(t *testing.T) {
 	y = []byte("a:\n  b: 1\n    c: 3")
 	s3 := UnmarshalStringMap{}
 	unmarshalStrictFail(t, y, &s3)
+
+	type NamedThing struct {
+		Name string `json:"name"`
+		ID   string `json:"id"`
+	}
+	// When using strict unmarshal, we should see
+	// the unmarshal fail if there are multiple keys
+	y = []byte(`
+a:
+  name: TestA
+  id: ID-A
+  id: ID-1
+`)
+	s4 := NamedThing{}
+	unmarshalStrictFail(t, y, &s4)
 }
 
 func unmarshalStrict(t *testing.T, y []byte, s, e interface{}, opts ...JSONOpt) {
