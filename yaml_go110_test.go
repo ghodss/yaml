@@ -34,7 +34,7 @@ func TestUnmarshalWithTags(t *testing.T) {
 
 }
 
-func ExampleUnknown() {
+func exampleUnknown() {
 	type WithTaggedField struct {
 		Field string `json:"field"`
 	}
