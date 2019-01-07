@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"runtime"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -62,32 +64,32 @@ func TestUnmarshal(t *testing.T) {
 	y := []byte("a: 1")
 	s1 := UnmarshalString{}
 	e1 := UnmarshalString{A: "1"}
-	unmarshal(t, y, &s1, &e1)
+	unmarshalEqual(t, y, &s1, &e1)
 
 	y = []byte("a: true")
 	s1 = UnmarshalString{}
 	e1 = UnmarshalString{A: "true"}
-	unmarshal(t, y, &s1, &e1)
+	unmarshalEqual(t, y, &s1, &e1)
 
 	y = []byte("true: 1")
 	s1 = UnmarshalString{}
 	e1 = UnmarshalString{True: "1"}
-	unmarshal(t, y, &s1, &e1)
+	unmarshalEqual(t, y, &s1, &e1)
 
 	y = []byte("a:\n  a: 1")
 	s2 := UnmarshalNestedString{}
 	e2 := UnmarshalNestedString{NestedString{"1"}}
-	unmarshal(t, y, &s2, &e2)
+	unmarshalEqual(t, y, &s2, &e2)
 
 	y = []byte("a:\n  - b: abc\n    c: def\n  - b: 123\n    c: 456\n")
 	s3 := UnmarshalSlice{}
 	e3 := UnmarshalSlice{[]NestedSlice{NestedSlice{"abc", strPtr("def")}, NestedSlice{"123", strPtr("456")}}}
-	unmarshal(t, y, &s3, &e3)
+	unmarshalEqual(t, y, &s3, &e3)
 
 	y = []byte("a:\n  b: 1")
 	s4 := UnmarshalStringMap{}
 	e4 := UnmarshalStringMap{map[string]string{"b": "1"}}
-	unmarshal(t, y, &s4, &e4)
+	unmarshalEqual(t, y, &s4, &e4)
 
 	y = []byte(`
 a:
@@ -103,18 +105,163 @@ b:
 		"a": &NamedThing{Name: "TestA"},
 		"b": &NamedThing{Name: "TestB"},
 	}
-	unmarshal(t, y, &s5, &e5)
+	unmarshalEqual(t, y, &s5, &e5)
 }
 
-func unmarshal(t *testing.T, y []byte, s, e interface{}, opts ...JSONOpt) {
+// TestUnmarshalNonStrict tests that we parse ambiguous YAML without error.
+func TestUnmarshalNonStrict(t *testing.T) {
+	for _, tc := range []struct {
+		yaml []byte
+		want UnmarshalString
+	}{
+		{
+			yaml: []byte("a: 1"),
+			want: UnmarshalString{A: "1"},
+		},
+		{
+			// Unknown field get ignored.
+			yaml: []byte("a: 1\nunknownField: 2"),
+			want: UnmarshalString{A: "1"},
+		},
+		{
+			// Unknown fields get ignored.
+			yaml: []byte("unknownOne: 2\na: 1\nunknownTwo: 2"),
+			want: UnmarshalString{A: "1"},
+		},
+		{
+			// Last declaration of `a` wins.
+			yaml: []byte("a: 1\na: 2"),
+			want: UnmarshalString{A: "2"},
+		},
+		{
+			// Even ignore first declaration of `a` with wrong type.
+			yaml: []byte("a: [1,2,3]\na: value-of-a"),
+			want: UnmarshalString{A: "value-of-a"},
+		},
+		{
+			// Last value of `a` and first and only mention of `true` are parsed.
+			yaml: []byte("true: string-value-of-yes\na: 1\na: [1,2,3]\na: value-of-a"),
+			want: UnmarshalString{A: "value-of-a", True: "string-value-of-yes"},
+		},
+		{
+			// In YAML, `YES` is a Boolean true.
+			yaml: []byte("true: YES"),
+			want: UnmarshalString{True: "true"},
+		},
+	} {
+		s := UnmarshalString{}
+		unmarshalEqual(t, tc.yaml, &s, &tc.want)
+	}
+}
+
+// prettyFunctionName converts a slice of JSONOpt function pointers to a human
+// readable string representation.
+func prettyFunctionName(opts []JSONOpt) []string {
+	var r []string
+	for _, o := range opts {
+		r = append(r, runtime.FuncForPC(reflect.ValueOf(o).Pointer()).Name())
+	}
+	return r
+}
+
+func unmarshalEqual(t *testing.T, y []byte, s, e interface{}, opts ...JSONOpt) {
+	t.Helper()
 	err := Unmarshal(y, s, opts...)
 	if err != nil {
-		t.Errorf("error unmarshaling YAML: %v", err)
+		t.Errorf("Unmarshal(%#q, s, %v) = %v", string(y), prettyFunctionName(opts), err)
+		return
 	}
 
 	if !reflect.DeepEqual(s, e) {
-		t.Errorf("unmarshal YAML was unsuccessful, expected: %+#v, got: %+#v",
-			e, s)
+		t.Errorf("Unmarshal(%#q, s, %v) = %+#v; want %+#v", string(y), prettyFunctionName(opts), s, e)
+	}
+}
+
+// TestUnmarshalStrict tests that we return an error on ambiguous YAML.
+func TestUnmarshalStrict(t *testing.T) {
+	for _, tc := range []struct {
+		yaml        []byte
+		opts        []JSONOpt
+		want        UnmarshalString
+		wantYAMLErr bool
+		wantJSONErr bool
+		wantErr     string
+	}{
+		{
+			yaml: []byte("a: 1"),
+			want: UnmarshalString{A: "1"},
+		},
+		{
+			// Order does not matter.
+			yaml: []byte("true: 1\na: 2"),
+			want: UnmarshalString{A: "2", True: "1"},
+		},
+		{
+			// By default, unknown field is ignored.
+			yaml: []byte("a: 1\nunknownField: 2"),
+			want: UnmarshalString{A: "1"},
+		},
+		{
+			// Unknown field produces an error with `DisallowUnknownFields` option.
+			yaml:        []byte("a: 1\nunknownField: 2"),
+			opts:        []JSONOpt{DisallowUnknownFields},
+			wantJSONErr: true,
+			wantErr:     `unknown field "unknownField"`,
+		},
+		{
+			// Declaring `a` twice produces an error.
+			yaml:        []byte("a: 1\na: 2"),
+			wantYAMLErr: true,
+			wantErr:     `key "a" already set in map`,
+		},
+		{
+			// Not ignoring first declaration of A with wrong type.
+			yaml:        []byte("a: [1,2,3]\na: value-of-a"),
+			wantYAMLErr: true,
+			wantErr:     `key "a" already set in map`,
+		},
+		{
+			// Declaring field `true` twice.
+			yaml:        []byte("true: string-value-of-yes\ntrue: 1"),
+			wantYAMLErr: true,
+			wantErr:     `key true already set in map`,
+		},
+		{
+			// In YAML, `YES` is a Boolean true.
+			yaml: []byte("true: YES"),
+			want: UnmarshalString{True: "true"},
+		},
+	} {
+		po := prettyFunctionName(tc.opts)
+		s := UnmarshalString{}
+		err := UnmarshalStrict(tc.yaml, &s, tc.opts...)
+		if (tc.wantErr != "" || tc.wantYAMLErr || tc.wantJSONErr) && err == nil {
+			t.Errorf("UnmarshalStrict(%#q, &s, %v) = nil; want error", string(tc.yaml), po)
+			continue
+		}
+		if tc.wantErr == "" && err != nil {
+			t.Errorf("UnmarshalStrict(%#q, &s, %#v) = %v; want no error", string(tc.yaml), po, err)
+			continue
+		}
+		if want := "yaml: unmarshal errors"; tc.wantYAMLErr && !strings.Contains(err.Error(), want) {
+			t.Errorf("UnmarshalStrict(%#q, &s, %#v) = %v; want err contains %#q", string(tc.yaml), po, err, want)
+		}
+		if want := "error unmarshaling JSON"; tc.wantJSONErr && !strings.Contains(err.Error(), want) {
+			t.Errorf("UnmarshalStrict(%#q, &s, %#v) = %v; want err contains %#q", string(tc.yaml), po, err, want)
+		}
+		if tc.wantErr != "" && !strings.Contains(err.Error(), tc.wantErr) {
+			t.Errorf("UnmarshalStrict(%#q, &s, %#v) = %v; want err contains %#q", string(tc.yaml), po, err, tc.wantErr)
+		}
+
+		// Only test content of `s` if parsing indicated no error.
+		// If we got an error, `s` may be partially parsed and contain some data.
+		if err != nil {
+			continue
+		}
+
+		if !reflect.DeepEqual(s, tc.want) {
+			t.Errorf("UnmarshalStrict(%#q, &s, %#v) = %+#v; want %+#v", string(tc.yaml), po, s, tc.want)
+		}
 	}
 }
 
