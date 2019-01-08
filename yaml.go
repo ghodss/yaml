@@ -37,8 +37,8 @@ func Unmarshal(y []byte, o interface{}, opts ...JSONOpt) error {
 }
 
 // UnmarshalStrict is like Unmarshal except that any mapping keys that are
-// duplicates, will result in an error.
-// It combines well with the option DisallowUnknownFields.
+// duplicates will result in an error.
+// To also be strict about unknown fields, add the DisallowUnknownFields option.
 func UnmarshalStrict(y []byte, o interface{}, opts ...JSONOpt) error {
 	return unmarshal(yaml.UnmarshalStrict, y, o, opts)
 }
