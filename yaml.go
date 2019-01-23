@@ -34,7 +34,7 @@ type JSONOpt func(*json.Decoder) *json.Decoder
 // optionally configuring the behavior of the JSON unmarshal.
 func Unmarshal(y []byte, o interface{}, opts ...JSONOpt) error {
 	vo := reflect.ValueOf(o)
-	j, err := yamlToJSON(y, &vo, yaml.Unmarshal)
+	j, err := yamlToJSON(y, &vo, yamlUnmarshal)
 	if err != nil {
 		return fmt.Errorf("error converting YAML to JSON: %v", err)
 	}
@@ -66,18 +66,57 @@ func jsonUnmarshal(r io.Reader, o interface{}, opts ...JSONOpt) error {
 func JSONToYAML(j []byte) ([]byte, error) {
 	// Convert the JSON to an object.
 	var jsonObj interface{}
-	// We are using yaml.Unmarshal here (instead of json.Unmarshal) because the
+	// We are using yamlUnmarshal here (instead of json.Unmarshal) because the
 	// Go JSON library doesn't try to pick the right number type (int, float,
 	// etc.) when unmarshalling to interface{}, it just picks float64
 	// universally. go-yaml does go through the effort of picking the right
 	// number type, so we can preserve number type throughout this process.
-	err := yaml.Unmarshal(j, &jsonObj)
+	err := yamlUnmarshal(j, &jsonObj)
 	if err != nil {
 		return nil, err
 	}
 
 	// Marshal this object into YAML.
 	return yaml.Marshal(jsonObj)
+}
+
+// yamlUnmarshal works like yaml.Unmarshal but supports streams.
+func yamlUnmarshal(b []byte, out interface{}) error {
+	return internalYamlUnmarshal(false, b, out)
+}
+
+// yamlUnmarshal works like yaml.UnmarshalStrict but supports streams.
+func yamlUnmarshalStrict(b []byte, out interface{}) error {
+	return internalYamlUnmarshal(true, b, out)
+}
+
+// internalYamlUnmarshal is a wrapper around yaml.Decoder that allows for
+// decoding yaml streams.
+func internalYamlUnmarshal(strict bool, b []byte, out interface{}) error {
+	decoder := yaml.NewDecoder(bytes.NewBuffer(b))
+	decoder.SetStrict(strict)
+
+	var outs []interface{}
+	for {
+		var tmp interface{}
+		err := decoder.Decode(&tmp)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+		outs = append(outs, tmp)
+	}
+
+	outV := reflect.ValueOf(out)
+	// if there is only one value, we don't want put it into a slice
+	if len(outs) == 1 {
+		outV.Elem().Set(reflect.ValueOf(outs[0]))
+	} else {
+		outV.Elem().Set(reflect.ValueOf(outs))
+	}
+
+	return nil
 }
 
 // YAMLToJSON converts YAML to JSON. Since JSON is a subset of YAML,
@@ -93,13 +132,13 @@ func JSONToYAML(j []byte) ([]byte, error) {
 //
 // For strict decoding of YAML, use YAMLToJSONStrict.
 func YAMLToJSON(y []byte) ([]byte, error) {
-	return yamlToJSON(y, nil, yaml.Unmarshal)
+	return yamlToJSON(y, nil, yamlUnmarshal)
 }
 
 // YAMLToJSONStrict is like YAMLToJSON but enables strict YAML decoding,
 // returning an error on any duplicate field names.
 func YAMLToJSONStrict(y []byte) ([]byte, error) {
-	return yamlToJSON(y, nil, yaml.UnmarshalStrict)
+	return yamlToJSON(y, nil, yamlUnmarshalStrict)
 }
 
 func yamlToJSON(y []byte, jsonTarget *reflect.Value, yamlUnmarshal func([]byte, interface{}) error) ([]byte, error) {

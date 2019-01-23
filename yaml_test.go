@@ -104,6 +104,11 @@ b:
 		"b": &NamedThing{Name: "TestB"},
 	}
 	unmarshal(t, y, &s5, &e5)
+
+	y = []byte("---\na: 1\n---\nb: 2\n")
+	s6 := []map[string]int{}
+	e6 := []map[string]int{{"a": 1}, {"b": 2}}
+	unmarshal(t, y, &s6, &e6)
 }
 
 func unmarshal(t *testing.T, y []byte, s, e interface{}, opts ...JSONOpt) {
