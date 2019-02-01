@@ -165,6 +165,7 @@ func prettyFunctionName(opts []JSONOpt) []string {
 }
 
 func unmarshalEqual(t *testing.T, y []byte, s, e interface{}, opts ...JSONOpt) {
+	t.Helper()
 	err := Unmarshal(y, s, opts...)
 	if err != nil {
 		t.Errorf("Unmarshal(%#q, s, %v) = %v", string(y), prettyFunctionName(opts), err)
