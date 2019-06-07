@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/kubernetes-sigs/yaml.svg)](https://travis-ci.org/kubernetes-sigs/yaml)
 
+kubernetes-sigs/yaml is a permanent fork of [ghodss/yaml](https://github.com/ghodss/yaml).
+
 ## Introduction
 
 A wrapper around [go-yaml](https://github.com/go-yaml/yaml) designed to enable a better way of handling YAML when marshaling to and from structs.
