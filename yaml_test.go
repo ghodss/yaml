@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"runtime"
 	"strconv"
-	"strings"
 	"testing"
 )
 
@@ -129,24 +128,9 @@ func TestUnmarshalNonStrict(t *testing.T) {
 			want: UnmarshalString{A: "1"},
 		},
 		{
-			// Last declaration of `a` wins.
-			yaml: []byte("a: 1\na: 2"),
-			want: UnmarshalString{A: "2"},
-		},
-		{
-			// Even ignore first declaration of `a` with wrong type.
-			yaml: []byte("a: [1,2,3]\na: value-of-a"),
-			want: UnmarshalString{A: "value-of-a"},
-		},
-		{
-			// Last value of `a` and first and only mention of `true` are parsed.
-			yaml: []byte("true: string-value-of-yes\na: 1\na: [1,2,3]\na: value-of-a"),
-			want: UnmarshalString{A: "value-of-a", True: "string-value-of-yes"},
-		},
-		{
 			// In YAML, `YES` is a Boolean true.
 			yaml: []byte("true: YES"),
-			want: UnmarshalString{True: "true"},
+			want: UnmarshalString{True: "YES"},
 		},
 	} {
 		s := UnmarshalString{}
@@ -174,76 +158,6 @@ func unmarshalEqual(t *testing.T, y []byte, s, e interface{}, opts ...JSONOpt) {
 
 	if !reflect.DeepEqual(s, e) {
 		t.Errorf("Unmarshal(%#q, s, %v) = %+#v; want %+#v", string(y), prettyFunctionName(opts), s, e)
-	}
-}
-
-// TestUnmarshalStrict tests that we return an error on ambiguous YAML.
-func TestUnmarshalStrict(t *testing.T) {
-	for _, tc := range []struct {
-		yaml        []byte
-		want        UnmarshalString
-		wantErr     string
-	}{
-		{
-			yaml: []byte("a: 1"),
-			want: UnmarshalString{A: "1"},
-		},
-		{
-			// Order does not matter.
-			yaml: []byte("true: 1\na: 2"),
-			want: UnmarshalString{A: "2", True: "1"},
-		},
-		{
-			// By default, unknown field is ignored.
-			yaml: []byte("a: 1\nunknownField: 2"),
-			want: UnmarshalString{A: "1"},
-		},
-		{
-			// Declaring `a` twice produces an error.
-			yaml:        []byte("a: 1\na: 2"),
-			wantErr:     `key "a" already set in map`,
-		},
-		{
-			// Not ignoring first declaration of A with wrong type.
-			yaml:        []byte("a: [1,2,3]\na: value-of-a"),
-			wantErr:     `key "a" already set in map`,
-		},
-		{
-			// Declaring field `true` twice.
-			yaml:        []byte("true: string-value-of-yes\ntrue: 1"),
-			wantErr:     `key true already set in map`,
-		},
-		{
-			// In YAML, `YES` is a Boolean true.
-			yaml: []byte("true: YES"),
-			want: UnmarshalString{True: "true"},
-		},
-	} {
-		s := UnmarshalString{}
-		err := UnmarshalStrict(tc.yaml, &s)
-		if tc.wantErr != "" && err == nil {
-			t.Errorf("UnmarshalStrict(%#q, &s) = nil; want error", string(tc.yaml))
-			continue
-		}
-		if tc.wantErr == "" && err != nil {
-			t.Errorf("UnmarshalStrict(%#q, &s) = %v; want no error", string(tc.yaml), err)
-			continue
-		}
-		// We only expect errors during unmarshalling YAML.
-		if want := "yaml: unmarshal errors"; tc.wantErr != "" && !strings.Contains(err.Error(), want) {
-			t.Errorf("UnmarshalStrict(%#q, &s) = %v; want err contains %#q", string(tc.yaml), err, want)
-		}
-		if tc.wantErr != "" && !strings.Contains(err.Error(), tc.wantErr) {
-			t.Errorf("UnmarshalStrict(%#q, &s) = %v; want err contains %#q", string(tc.yaml), err, tc.wantErr)
-		}
-
-		// Even if there was an error, we continue the test: We expect that all
-		// errors occur during YAML unmarshalling. Such errors leaves `s` unmodified
-		// and the following check will compare default values of `UnmarshalString`.
-
-		if !reflect.DeepEqual(s, tc.want) {
-			t.Errorf("UnmarshalStrict(%#q, &s) = %+#v; want %+#v", string(tc.yaml), s, tc.want)
-		}
 	}
 }
 
@@ -413,17 +327,4 @@ func runCases(t *testing.T, runType RunType, cases []Case) {
 // To be able to easily fill in the *Case.reverse string above.
 func strPtr(s string) *string {
 	return &s
-}
-
-func TestYAMLToJSONStrict(t *testing.T) {
-	const data = `
-foo: bar
-foo: baz
-`
-	if _, err := YAMLToJSON([]byte(data)); err != nil {
-		t.Error("expected YAMLtoJSON to pass on duplicate field names")
-	}
-	if _, err := YAMLToJSONStrict([]byte(data)); err == nil {
-		t.Error("expected YAMLtoJSONStrict to fail on duplicate field names")
-	}
 }
