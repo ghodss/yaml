@@ -9,4 +9,4 @@ script:
   - GO111MODULE=on go test -v -race ./...
   - git diff --exit-code
 install:
-  - go get golang.org/x/lint/golint
+  - GO111MODULE=off go get golang.org/x/lint/golint
