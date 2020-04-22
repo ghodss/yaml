@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Marshals the object into JSON then converts JSON to YAML and returns the
@@ -44,13 +44,6 @@ type JSONOpt func(*json.Decoder) *json.Decoder
 // optionally configuring the behavior of the JSON unmarshal.
 func Unmarshal(y []byte, o interface{}, opts ...JSONOpt) error {
 	return unmarshal(yaml.Unmarshal, y, o, opts)
-}
-
-// UnmarshalStrict is like Unmarshal except that any mapping keys that are
-// duplicates will result in an error.
-// To also be strict about unknown fields, add the DisallowUnknownFields option.
-func UnmarshalStrict(y []byte, o interface{}, opts ...JSONOpt) error {
-	return unmarshal(yaml.UnmarshalStrict, y, o, opts)
 }
 
 func unmarshal(f func(in []byte, out interface{}) (err error), y []byte, o interface{}, opts []JSONOpt) error {
@@ -115,12 +108,6 @@ func JSONToYAML(j []byte) ([]byte, error) {
 // For strict decoding of YAML, use YAMLToJSONStrict.
 func YAMLToJSON(y []byte) ([]byte, error) {
 	return yamlToJSON(y, nil, yaml.Unmarshal)
-}
-
-// YAMLToJSONStrict is like YAMLToJSON but enables strict YAML decoding,
-// returning an error on any duplicate field names.
-func YAMLToJSONStrict(y []byte) ([]byte, error) {
-	return yamlToJSON(y, nil, yaml.UnmarshalStrict)
 }
 
 func yamlToJSON(y []byte, jsonTarget *reflect.Value, yamlUnmarshal func([]byte, interface{}) error) ([]byte, error) {

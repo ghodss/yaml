@@ -40,26 +40,26 @@ func TestUnmarshalWithTags(t *testing.T) {
 // duplicate fields in the YAML input.
 func TestUnmarshalStrictWithJSONOpts(t *testing.T) {
 	for _, tc := range []struct {
-		yaml        []byte
-		opts        []JSONOpt
-		want        UnmarshalString
-		wantErr     string
+		yaml    []byte
+		opts    []JSONOpt
+		want    UnmarshalPrimitives
+		wantErr string
 	}{
 		{
 			// By default, unknown field is ignored.
-			yaml: []byte("a: 1\nunknownField: 2"),
-			want: UnmarshalString{A: "1"},
+			yaml: []byte("bool: true\nunknownField: 2"),
+			want: UnmarshalPrimitives{Bool: true},
 		},
 		{
 			// Unknown field produces an error with `DisallowUnknownFields` option.
-			yaml:        []byte("a: 1\nunknownField: 2"),
+			yaml:        []byte("bool: true\nunknownField: 2"),
 			opts:        []JSONOpt{DisallowUnknownFields},
 			wantErr:     `unknown field "unknownField"`,
 		},
 	} {
 		po := prettyFunctionName(tc.opts)
-		s := UnmarshalString{}
-		err := UnmarshalStrict(tc.yaml, &s, tc.opts...)
+		s := UnmarshalPrimitives{}
+		err := Unmarshal(tc.yaml, &s, tc.opts...)
 		if tc.wantErr != "" && err == nil {
 			t.Errorf("UnmarshalStrict(%#q, &s, %v) = nil; want error", string(tc.yaml), po)
 			continue
