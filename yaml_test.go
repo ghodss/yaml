@@ -428,6 +428,7 @@ foo: baz
 }
 
 func TestJSONObjectToYAMLObject(t *testing.T) {
+	const bigUint64 = ((uint64(1) << 63) + 500) / 1000 * 1000
 	intOrInt64 := func(i64 int64) interface{} {
 		if i := int(i64); i64 == int64(i) {
 			return i
@@ -459,7 +460,7 @@ func TestJSONObjectToYAMLObject(t *testing.T) {
 				"map":                map[string]interface{}{"foo": "bar"},
 				"slice":              []interface{}{"foo", "bar"},
 				"string":             string("foo"),
-				"uint64 big":         float64(math.Pow(2, 63)),
+				"uint64 big":         bigUint64,
 			},
 			expected: yaml.MapSlice{
 				{Key: "nil slice"},
@@ -476,7 +477,7 @@ func TestJSONObjectToYAMLObject(t *testing.T) {
 				{Key: "map", Value: yaml.MapSlice{{Key: "foo", Value: "bar"}}},
 				{Key: "slice", Value: []interface{}{"foo", "bar"}},
 				{Key: "string", Value: string("foo")},
-				{Key: "uint64 big", Value: uint64(1) << 63},
+				{Key: "uint64 big", Value: bigUint64},
 			},
 		},
 	}
