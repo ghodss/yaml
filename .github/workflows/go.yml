@@ -9,6 +9,9 @@ on:
 jobs:
 
   build:
+    strategy:
+      matrix: 
+        go-version: [1.12.x, 1.13.x, 1.14.x]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -16,7 +19,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: [1.12.x, 1.13.x, 1.14.x]
+        go-version: ${{ matrix.go-versions }}
     - name: Run gofmt
       run: diff -u <(echo -n) <(gofmt -d *.go)
     - name: Run golint
