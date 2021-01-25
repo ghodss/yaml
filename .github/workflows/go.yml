@@ -1,0 +1,28 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.12.x
+    - name: Build
+      run: diff -u <(echo -n) <(gofmt -d *.go)
+      run: diff -u <(echo -n) <(golint $(go list -e ./...) | grep -v YAMLToJSON)
+      run: GO111MODULE=on go vet .
+      run: GO111MODULE=on go test -v -race ./...
+      run: git diff --exit-code
+
+    - name: Install
+      run: GO111MODULE=off go get golang.org/x/lint/golint
