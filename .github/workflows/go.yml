@@ -27,6 +27,5 @@ jobs:
       run: GO111MODULE=on go test -v -race ./...
     - name: Check diff
       run: git diff --exit-code
-  install:
     - name: Install
       run: GO111MODULE=off go get golang.org/x/lint/golint
