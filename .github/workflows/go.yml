@@ -16,9 +16,17 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.12.x
-    - name: Build
-      run: diff -u <(echo -n) <(gofmt -d *.go) && diff -u <(echo -n) <(golint $(go list -e ./...) | grep -v YAMLToJSON)  && GO111MODULE=on go vet .  && GO111MODULE=on go test -v -race ./...  && git diff --exit-code
-
+        go-version: [1.12.x, 1.13.x, 1.14.x]
+    - name: Run gofmt
+      run: diff -u <(echo -n) <(gofmt -d *.go)
+    - name: Run golint
+      run: diff -u <(echo -n) <(golint $(go list -e ./...) | grep -v YAMLToJSON)
+    - name: Run go vet
+      run: GO111MODULE=on go vet .
+    - name: Run go test
+      run: GO111MODULE=on go test -v -race ./...
+    - name: Check diff
+      run: git diff --exit-code
+  install:
     - name: Install
       run: GO111MODULE=off go get golang.org/x/lint/golint
