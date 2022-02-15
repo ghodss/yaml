@@ -8,7 +8,7 @@
 //
 // See also http://ghodss.com/2014/the-right-way-to-handle-yaml-in-golang
 //
-package yaml  // import "github.com/ghodss/yaml"
+package yaml // import "github.com/ghodss/yaml"
 
 import (
 	"bytes"
@@ -121,6 +121,12 @@ func YAMLToJSON(y []byte) ([]byte, error) {
 // returning an error on any duplicate field names.
 func YAMLToJSONStrict(y []byte) ([]byte, error) {
 	return yamlToJSON(y, nil, yaml.UnmarshalStrict)
+}
+
+// YAMLToJSONCustom is like YAMLToJSON but uses the passed in function to
+// unmarshal from YAML to an object.
+func YAMLToJSONCustom(y []byte, yamlUnmarshal func([]byte, interface{}) error) ([]byte, error) {
+	return yamlToJSON(y, nil, yamlUnmarshal)
 }
 
 func yamlToJSON(y []byte, jsonTarget *reflect.Value, yamlUnmarshal func([]byte, interface{}) error) ([]byte, error) {
