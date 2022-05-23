@@ -8,7 +8,7 @@
 //
 // See also http://ghodss.com/2014/the-right-way-to-handle-yaml-in-golang
 //
-package yaml  // import "github.com/ghodss/yaml"
+package yaml // import "github.com/ghodss/yaml"
 
 import (
 	"bytes"
@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Marshals the object into JSON then converts JSON to YAML and returns the
@@ -43,19 +43,23 @@ type JSONOpt func(*json.Decoder) *json.Decoder
 // Unmarshal converts YAML to JSON then uses JSON to unmarshal into an object,
 // optionally configuring the behavior of the JSON unmarshal.
 func Unmarshal(y []byte, o interface{}, opts ...JSONOpt) error {
-	return unmarshal(yaml.Unmarshal, y, o, opts)
+	dec := yaml.NewDecoder(bytes.NewReader(y))
+	dec.UniqueKeys(false)
+	return unmarshal(dec, o, opts)
 }
 
 // UnmarshalStrict is like Unmarshal except that any mapping keys that are
 // duplicates will result in an error.
 // To also be strict about unknown fields, add the DisallowUnknownFields option.
 func UnmarshalStrict(y []byte, o interface{}, opts ...JSONOpt) error {
-	return unmarshal(yaml.UnmarshalStrict, y, o, opts)
+	dec := yaml.NewDecoder(bytes.NewReader(y))
+	dec.KnownFields(true)
+	return unmarshal(dec, o, opts)
 }
 
-func unmarshal(f func(in []byte, out interface{}) (err error), y []byte, o interface{}, opts []JSONOpt) error {
+func unmarshal(dec *yaml.Decoder, o interface{}, opts []JSONOpt) error {
 	vo := reflect.ValueOf(o)
-	j, err := yamlToJSON(y, &vo, f)
+	j, err := yamlToJSON(dec, &vo)
 	if err != nil {
 		return fmt.Errorf("error converting YAML to JSON: %v", err)
 	}
@@ -114,20 +118,23 @@ func JSONToYAML(j []byte) ([]byte, error) {
 //
 // For strict decoding of YAML, use YAMLToJSONStrict.
 func YAMLToJSON(y []byte) ([]byte, error) {
-	return yamlToJSON(y, nil, yaml.Unmarshal)
+	dec := yaml.NewDecoder(bytes.NewReader(y))
+	dec.UniqueKeys(false)
+	return yamlToJSON(dec, nil)
 }
 
 // YAMLToJSONStrict is like YAMLToJSON but enables strict YAML decoding,
 // returning an error on any duplicate field names.
 func YAMLToJSONStrict(y []byte) ([]byte, error) {
-	return yamlToJSON(y, nil, yaml.UnmarshalStrict)
+	dec := yaml.NewDecoder(bytes.NewReader(y))
+	dec.KnownFields(true)
+	return yamlToJSON(dec, nil)
 }
 
-func yamlToJSON(y []byte, jsonTarget *reflect.Value, yamlUnmarshal func([]byte, interface{}) error) ([]byte, error) {
+func yamlToJSON(dec *yaml.Decoder, jsonTarget *reflect.Value) ([]byte, error) {
 	// Convert the YAML to an object.
 	var yamlObj interface{}
-	err := yamlUnmarshal(y, &yamlObj)
-	if err != nil {
+	if err := dec.Decode(&yamlObj); err != nil {
 		return nil, err
 	}
 
