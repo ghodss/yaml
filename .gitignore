@@ -18,3 +18,5 @@ Session.vim
 
 # Go test binaries
 *.test
+
+.idea/
