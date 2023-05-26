@@ -1,3 +1,4 @@
+//go:build go1.10
 // +build go1.10
 
 package yaml
@@ -40,10 +41,10 @@ func TestUnmarshalWithTags(t *testing.T) {
 // duplicate fields in the YAML input.
 func TestUnmarshalStrictWithJSONOpts(t *testing.T) {
 	for _, tc := range []struct {
-		yaml        []byte
-		opts        []JSONOpt
-		want        UnmarshalString
-		wantErr     string
+		yaml    []byte
+		opts    []JSONOpt
+		want    UnmarshalString
+		wantErr string
 	}{
 		{
 			// By default, unknown field is ignored.
@@ -52,9 +53,9 @@ func TestUnmarshalStrictWithJSONOpts(t *testing.T) {
 		},
 		{
 			// Unknown field produces an error with `DisallowUnknownFields` option.
-			yaml:        []byte("a: 1\nunknownField: 2"),
-			opts:        []JSONOpt{DisallowUnknownFields},
-			wantErr:     `unknown field "unknownField"`,
+			yaml:    []byte("a: 1\nunknownField: 2"),
+			opts:    []JSONOpt{DisallowUnknownFields},
+			wantErr: `unknown field "unknownField"`,
 		},
 	} {
 		po := prettyFunctionName(tc.opts)
@@ -69,7 +70,7 @@ func TestUnmarshalStrictWithJSONOpts(t *testing.T) {
 			continue
 		}
 		// We expect that duplicate fields are discovered during JSON unmarshalling.
-		if want := "error unmarshaling JSON"; tc.wantErr != "" && !strings.Contains(err.Error(), want) {
+		if want := "error unmarshalling JSON"; tc.wantErr != "" && !strings.Contains(err.Error(), want) {
 			t.Errorf("UnmarshalStrict(%#q, &s, %#v) = %v; want err contains %#q", string(tc.yaml), po, err, want)
 		}
 		if tc.wantErr != "" && !strings.Contains(err.Error(), tc.wantErr) {
@@ -95,6 +96,6 @@ func ExampleUnknown() {
 	y := []byte(`unknown: "hello"`)
 	v := WithTaggedField{}
 	fmt.Printf("%v\n", Unmarshal(y, &v, DisallowUnknownFields))
-	// Ouptut:
-	// unmarshaling JSON: while decoding JSON: json: unknown field "unknown"
+	// Output:
+	// unmarshalling JSON: while decoding JSON: json: unknown field "unknown"
 }

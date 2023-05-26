@@ -7,8 +7,7 @@
 // JSON methods MarshalJSON and UnmarshalJSON unlike go-yaml.
 //
 // See also http://ghodss.com/2014/the-right-way-to-handle-yaml-in-golang
-//
-package yaml  // import "github.com/ghodss/yaml"
+package yaml // import "github.com/ghodss/yaml"
 
 import (
 	"bytes"
@@ -21,7 +20,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Marshals the object into JSON then converts JSON to YAML and returns the
+// Marshal Marshals the object into JSON then converts JSON to YAML and returns the
 // YAML.
 func Marshal(o interface{}) ([]byte, error) {
 	j, err := json.Marshal(o)
@@ -83,7 +82,7 @@ func jsonUnmarshal(r io.Reader, o interface{}, opts ...JSONOpt) error {
 	return nil
 }
 
-// Convert JSON to YAML.
+// JSONToYAML Convert JSON to YAML.
 func JSONToYAML(j []byte) ([]byte, error) {
 	// Convert the JSON to an object.
 	var jsonObj interface{}
@@ -105,12 +104,12 @@ func JSONToYAML(j []byte) ([]byte, error) {
 // passing JSON through this method should be a no-op.
 //
 // Things YAML can do that are not supported by JSON:
-// * In YAML you can have binary and null keys in your maps. These are invalid
-//   in JSON. (int and float keys are converted to strings.)
-// * Binary data in YAML with the !!binary tag is not supported. If you want to
-//   use binary data with this library, encode the data as base64 as usual but do
-//   not use the !!binary tag in your YAML. This will ensure the original base64
-//   encoded data makes it all the way through to the JSON.
+//   - In YAML you can have binary and null keys in your maps. These are invalid
+//     in JSON. (int and float keys are converted to strings.)
+//   - Binary data in YAML with the !!binary tag is not supported. If you want to
+//     use binary data with this library, encode the data as base64 as usual but do
+//     not use the !!binary tag in your YAML. This will ensure the original base64
+//     encoded data makes it all the way through to the JSON.
 //
 // For strict decoding of YAML, use YAMLToJSONStrict.
 func YAMLToJSON(y []byte) ([]byte, error) {
@@ -153,7 +152,7 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 	// string.
 	if jsonTarget != nil {
 		ju, tu, pv := indirect(*jsonTarget, false)
-		// We have a JSON or Text Umarshaler at this level, so we can't be trying
+		// We have a JSON or Text Unmarshaler at this level, so we can't be trying
 		// to decode into a string.
 		if ju != nil || tu != nil {
 			jsonTarget = nil
@@ -165,7 +164,7 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 	// If yamlObj is a number or a boolean, check if jsonTarget is a string -
 	// if so, coerce.  Else return normal.
 	// If yamlObj is a map or array, find the field that each key is
-	// unmarshaling to, and when you recurse pass the reflect.Value for that
+	// unmarshalling to, and when you recurse pass the reflect.Value for that
 	// field back into this function.
 	switch typedYAMLObj := yamlObj.(type) {
 	case map[interface{}]interface{}:
